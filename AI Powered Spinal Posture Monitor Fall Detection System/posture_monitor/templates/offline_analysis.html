@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-body">
+                <h2 class="fw-bold mb-0">Offline Data Analysis</h2>
+                <p class="text-muted mb-0">Upload your saved posture data for analysis</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Upload Data File</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dataFile" class="form-label">Select CSV or Excel file</label>
+                        <input type="file" class="form-control" id="dataFile" accept=".csv,.xlsx,.xls" required>
+                        <div class="form-text">
+                            File should contain columns: <strong>tilt_x</strong>, <strong>tilt_y</strong>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-custom">
+                        <i class="fas fa-upload me-2"></i>Analyze Data
+                    </button>
+                </form>
+                
+                <div id="uploadProgress" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted">Processing data...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">File Format Requirements</h5>
+            </div>
+            <div class="card-body">
+                <h6>Required Columns:</h6>
+                <ul>
+                    <li><strong>tilt_x</strong>: X-axis tilt angle in degrees</li>
+                    <li><strong>tilt_y</strong>: Y-axis tilt angle in degrees</li>
+                </ul>
+                
+                <h6 class="mt-3">Supported Formats:</h6>
+                <ul>
+                    <li>CSV (.csv)</li>
+                    <li>Excel (.xlsx, .xls)</li>
+                </ul>
+                
+                <h6 class="mt-3">Example CSV Format:</h6>
+                <pre class="bg-light p-3 rounded">
+tilt_x,tilt_y
+15.2,8.7
+12.5,10.1
+18.3,5.9
+...
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="resultsSection" style="display: none;">
+    <div class="col-md-8 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Analysis Results</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="analysisChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="metric-card mb-3">
+                    <div id="totalSamples" class="metric-value">0</div>
+                    <div class="text-muted">Total Samples</div>
+                </div>
+                
+                <div class="metric-card mb-3">
+                    <div id="correctSamples" class="metric-value text-success">0</div>
+                    <div class="text-muted">Correct Posture</div>
+                </div>
+                
+                <div class="metric-card mb-3">
+                    <div id="correctnessPercentage" class="metric-value text-primary">0%</div>
+                    <div class="text-muted">Overall Correctness</div>
+                </div>
+                
+                <button id="downloadReport" class="btn btn-success btn-custom">
+                    <i class="fas fa-download me-2"></i>Download Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let analysisChart = null;
+let analysisResults = null;
+
+// Initialize empty chart
+const ctx = document.getElementById('analysisChart').getContext('2d');
+analysisChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            {
+                label: 'Tilt X',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: 'Tilt Y', 
+                data: [],
+                borderColor: '#764ba2',
+                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: 'Posture Status',
+                data: [],
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                min: 0,
+                max: 1,
+                ticks: {
+                    callback: function(value) {
+                        return value ? 'Good' : 'Poor';
+                    }
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
+            }
+        }
+    }
+});
+
+// Handle file upload
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('dataFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file to upload');
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('uploadProgress').style.display = 'block';
+    const progressBar = document.querySelector('.progress-bar');
+    progressBar.style.width = '0%';
+    
+    // Simulate progress
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        if (progress >= 90) {
+            clearInterval(progressInterval);
+        }
+    }, 200);
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Upload file
+    fetch('/upload-offline-data/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            document.getElementById('uploadProgress').style.display = 'none';
+            
+            if (data.success) {
+                analysisResults = data.analysis;
+                displayAnalysisResults(data.analysis);
+                document.getElementById('resultsSection').style.display = 'block';
+            } else {
+                alert('Error: ' + (data.error || 'Upload failed'));
+            }
+        }, 500);
+    })
+    .catch(error => {
+        clearInterval(progressInterval);
+        document.getElementById('uploadProgress').style.display = 'none';
+        console.error('Error:', error);
+        alert('Upload failed. Please try again.');
+    });
+});
+
+function displayAnalysisResults(analysis) {
+    // Update summary metrics
+    document.getElementById('totalSamples').textContent = analysis.total_samples || 0;
+    document.getElementById('correctSamples').textContent = analysis.correct_samples || 0;
+    document.getElementById('correctnessPercentage').textContent = 
+        (analysis.correctness_percentage || 0).toFixed(1) + '%';
+    
+    // Update chart with analysis data
+    if (analysis.time_series) {
+        const labels = analysis.time_series.map((_, index) => `Sample ${index + 1}`);
+        const tiltX = analysis.time_series.map(item => item.tilt_x);
+        const tiltY = analysis.time_series.map(item => item.tilt_y);
+        const postureStatus = analysis.time_series.map(item => item.posture_correct ? 1 : 0);
+        
+        analysisChart.data.labels = labels;
+        analysisChart.data.datasets[0].data = tiltX;
+        analysisChart.data.datasets[1].data = tiltY;
+        analysisChart.data.datasets[2].data = postureStatus;
+        analysisChart.update();
+    }
+}
+
+// Download report
+document.getElementById('downloadReport').addEventListener('click', function() {
+    if (!analysisResults) {
+        alert('No analysis data available');
+        return;
+    }
+    
+    const report = {
+        title: 'Posture Analysis Report',
+        generated: new Date().toISOString(),
+        summary: {
+            totalSamples: analysisResults.total_samples,
+            correctSamples: analysisResults.correct_samples,
+            correctnessPercentage: analysisResults.correctness_percentage,
+            averageTiltX: analysisResults.avg_tilt_x,
+            averageTiltY: analysisResults.avg_tilt_y
+        },
+        recommendations: analysisResults.recommendations || [],
+        data: analysisResults.time_series || []
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { 
+        type: 'application/json' 
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'posture_analysis_report.json';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+// Add CSRF token to all forms
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        // Create CSRF token input if not exists
+        const token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = 'csrfmiddlewaretoken';
+        token.value = '{{ csrf_token }}';
+        document.getElementById('uploadForm').appendChild(token);
+    }
+});
+</script>

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-custom">
+            <div class="card-body text-center p-5">
+                <i class="fas fa-user-check fa-5x text-primary mb-4"></i>
+                <h1 class="display-4 fw-bold mb-4">Posture Monitoring System</h1>
+                <p class="lead mb-4">
+                    AI-powered real-time posture monitoring and fall detection system
+                    to help you maintain better health and safety.
+                </p>
+                
+                <div class="row mt-5">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-eye fa-3x text-info mb-3"></i>
+                                <h5>Real-time Monitoring</h5>
+                                <p>Monitor your posture in real-time with instant feedback</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <h5>Fall Detection</h5>
+                                <p>Automatic fall detection with emergency alerts</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                                <h5>Analytics</h5>
+                                <p>Detailed analysis and progress tracking</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-custom btn-lg me-3">
+                        Get Started
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-primary btn-custom btn-lg">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- User data for JavaScript -->
+{{ user_data|json_script:"user-data" }}
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="fw-bold mb-0">Real-time Monitoring</h2>
+                    <div>
+                        <span id="connectionStatus" class="badge bg-secondary">Disconnected</span>
+                        <button id="connectBtn" class="btn btn-primary btn-custom ms-2">Connect Device</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Current Posture Status</h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="postureStatus" class="mb-4">
+                    <i id="postureIcon" class="fas fa-user fa-5x text-muted mb-3"></i>
+                    <h4 id="postureText">Waiting for data...</h4>
+                    <p id="postureConfidence" class="text-muted"></p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <div id="tiltX" class="metric-value">0°</div>
+                            <div class="text-muted">Tilt X</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <div id="tiltY" class="metric-value">0°</div>
+                            <div class="text-muted">Tilt Y</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Fall Detection</h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="fallStatus" class="mb-4">
+                    <i id="fallIcon" class="fas fa-shield-alt fa-5x text-success mb-3"></i>
+                    <h4 id="fallText">Normal Activity</h4>
+                    <p id="fallConfidence" class="text-muted"></p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-4">
+                        <div class="metric-card">
+                            <div id="gyroX" class="metric-value">0</div>
+                            <div class="text-muted">Gyro X</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="metric-card">
+                            <div id="gyroY" class="metric-value">0</div>
+                            <div class="text-muted">Gyro Y</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="metric-card">
+                            <div id="gyroZ" class="metric-value">0</div>
+                            <div class="text-muted">Gyro Z</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Live Data Stream</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="liveChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">System Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div id="alertsContainer">
+                    <p class="text-muted">No alerts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let socket = null;
+let liveChart = null;
+let chartData = {
+    labels: [],
+    tiltX: [],
+    tiltY: []
+};
+
+// Get user data from Django template
+const userData = JSON.parse(document.getElementById('user-data').textContent);
+
+// Initialize live chart
+const ctx = document.getElementById('liveChart').getContext('2d');
+liveChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: chartData.labels,
+        datasets: [
+            {
+                label: 'Tilt X',
+                data: chartData.tiltX,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            },
+            {
+                label: 'Tilt Y',
+                data: chartData.tiltY,
+                borderColor: '#764ba2',
+                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                tension: 0.4
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                display: false
+            },
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: true
+            }
+        }
+    }
+});
+
+// WebSocket connection
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/posture/`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = function(event) {
+        console.log('WebSocket connected');
+        document.getElementById('connectionStatus').textContent = 'Connected';
+        document.getElementById('connectionStatus').className = 'badge bg-success';
+        document.getElementById('connectBtn').textContent = 'Disconnect';
+        document.getElementById('connectBtn').className = 'btn btn-danger btn-custom ms-2';
+        
+        // Check if user is authenticated and send connection message
+        if (userData && userData.is_authenticated && userData.id) {
+            socket.send(JSON.stringify({
+                type: 'device_connect',
+                user_id: userData.id,
+                device_id: `web_${userData.id}`
+            }));
+        } else {
+            console.error('User not authenticated or user data not available');
+            addAlert('Please log in to connect device', 'warning');
+        }
+    };
+    
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+    };
+    
+    socket.onclose = function(event) {
+        console.log('WebSocket disconnected');
+        document.getElementById('connectionStatus').textContent = 'Disconnected';
+        document.getElementById('connectionStatus').className = 'badge bg-danger';
+        document.getElementById('connectBtn').textContent = 'Connect Device';
+        document.getElementById('connectBtn').className = 'btn btn-primary btn-custom ms-2';
+    };
+    
+    socket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        addAlert('Connection error occurred', 'danger');
+    };
+}
+
+function handleWebSocketMessage(data) {
+    switch(data.type) {
+        case 'connection_success':
+            addAlert('Device connected successfully', 'success');
+            break;
+            
+        case 'posture_update':
+            updatePostureDisplay(data.data);
+            updateLiveChart(data.data);
+            break;
+            
+        case 'fall_alert':
+            addAlert(data.message, 'danger');
+            updateFallDisplay(true);
+            break;
+            
+        case 'posture_alert':
+            addAlert(data.message, 'warning');
+            break;
+            
+        case 'vibration_command':
+            addAlert('Vibration alert sent to device', 'info');
+            break;
+            
+        default:
+            console.log('Unknown message type:', data.type);
+            break;
+    }
+}
+
+function updatePostureDisplay(data) {
+    const postureIcon = document.getElementById('postureIcon');
+    const postureText = document.getElementById('postureText');
+    const postureConfidence = document.getElementById('postureConfidence');
+    
+    if (data.posture_correct === true) {
+        postureIcon.className = 'fas fa-user-check fa-5x text-success mb-3';
+        postureText.textContent = 'Good Posture';
+        postureText.className = 'text-success';
+    } else if (data.posture_correct === false) {
+        postureIcon.className = 'fas fa-user-times fa-5x text-danger mb-3';
+        postureText.textContent = 'Poor Posture';
+        postureText.className = 'text-danger';
+    }
+    
+    if (data.posture_confidence !== undefined && data.posture_confidence !== null) {
+        postureConfidence.textContent = `Confidence: ${(data.posture_confidence * 100).toFixed(1)}%`;
+    }
+    
+    // Update tilt values with null checks
+    if (data.tilt_x !== undefined) {
+        document.getElementById('tiltX').textContent = `${data.tilt_x.toFixed(1)}°`;
+    }
+    if (data.tilt_y !== undefined) {
+        document.getElementById('tiltY').textContent = `${data.tilt_y.toFixed(1)}°`;
+    }
+    
+    // Update gyroscope values with null checks
+    if (data.gyro_x !== undefined) {
+        document.getElementById('gyroX').textContent = data.gyro_x.toFixed(2);
+    }
+    if (data.gyro_y !== undefined) {
+        document.getElementById('gyroY').textContent = data.gyro_y.toFixed(2);
+    }
+    if (data.gyro_z !== undefined) {
+        document.getElementById('gyroZ').textContent = data.gyro_z.toFixed(2);
+    }
+}
+
+function updateFallDisplay(fallDetected) {
+    const fallIcon = document.getElementById('fallIcon');
+    const fallText = document.getElementById('fallText');
+    
+    if (fallDetected) {
+        fallIcon.className = 'fas fa-exclamation-triangle fa-5x text-danger mb-3';
+        fallText.textContent = 'FALL DETECTED!';
+        fallText.className = 'text-danger';
+        
+        // Auto-reset fall status after 30 seconds
+        setTimeout(() => {
+            updateFallDisplay(false);
+        }, 30000);
+    } else {
+        fallIcon.className = 'fas fa-shield-alt fa-5x text-success mb-3';
+        fallText.textContent = 'Normal Activity';
+        fallText.className = 'text-success';
+    }
+}
+
+function updateLiveChart(data) {
+    const now = new Date().toLocaleTimeString();
+    
+    chartData.labels.push(now);
+    chartData.tiltX.push(data.tilt_x || 0);
+    chartData.tiltY.push(data.tilt_y || 0);
+    
+    // Keep only last 50 data points
+    if (chartData.labels.length > 50) {
+        chartData.labels.shift();
+        chartData.tiltX.shift();
+        chartData.tiltY.shift();
+    }
+    
+    liveChart.update('none');
+}
+
+function addAlert(message, type) {
+    const alertsContainer = document.getElementById('alertsContainer');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-custom`;
+    alert.innerHTML = `
+        <small class="text-muted">${new Date().toLocaleTimeString()}</small><br>
+        <strong>${message}</strong>
+    `;
+    
+    // Remove the "No alerts" message if it exists
+    const noAlertsMsg = alertsContainer.querySelector('p.text-muted');
+    if (noAlertsMsg) {
+        noAlertsMsg.remove();
+    }
+    
+    alertsContainer.insertBefore(alert, alertsContainer.firstChild);
+    
+    // Auto-remove alert after 10 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+            
+            // If no alerts left, show "No alerts" message
+            if (alertsContainer.children.length === 0) {
+                alertsContainer.innerHTML = '<p class="text-muted">No alerts</p>';
+            }
+        }
+    }, 10000);
+}
+
+// Connect/Disconnect button handler
+document.getElementById('connectBtn').addEventListener('click', function() {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+    } else {
+        // Check if user is authenticated before connecting
+        if (!userData || !userData.is_authenticated) {
+            addAlert('Please log in to connect device', 'warning');
+            return;
+        }
+        connectWebSocket();
+    }
+});
+
+// Auto-connect on page load (only if user is authenticated)
+window.addEventListener('load', function() {
+    if (userData && userData.is_authenticated) {
+        connectWebSocket();
+    } else {
+        addAlert('Please log in to use real-time monitoring', 'info');
+    }
+});
+
+// Handle page visibility changes to manage connection
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Page is hidden, you might want to pause some operations
+        console.log('Page is now hidden');
+    } else {
+        // Page is visible again
+        console.log('Page is now visible');
+        // Reconnect if connection was lost
+        if (userData && userData.is_authenticated && (!socket || socket.readyState === WebSocket.CLOSED)) {
+            setTimeout(connectWebSocket, 1000);
+        }
+    }
+});
+</script>
+{% endblock %}

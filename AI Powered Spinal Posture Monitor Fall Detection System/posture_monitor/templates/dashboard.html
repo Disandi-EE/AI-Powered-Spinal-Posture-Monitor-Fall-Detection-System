@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card card-custom">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-0">Welcome back, {{ user.first_name|default:user.username }}!</h2>
+                        <p class="text-muted mb-0">Here's your posture monitoring overview</p>
+                    </div>
+                    <div>
+                        <span class="status-indicator {% if profile.is_device_connected %}status-online{% else %}status-offline{% endif %}"></span>
+                        Device {% if profile.is_device_connected %}Connected{% else %}Disconnected{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="metric-card">
+            <div class="metric-value">{{ total_samples }}</div>
+            <div class="text-muted">Samples Today</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="metric-card">
+            <div class="metric-value text-success">{{ correctness_percentage }}%</div>
+            <div class="text-muted">Posture Correctness</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="metric-card">
+            <div class="metric-value text-info">{{ recent_alerts|length }}</div>
+            <div class="text-muted">Recent Alerts</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="metric-card">
+            <div class="metric-value text-warning">0</div>
+            <div class="text-muted">Falls Detected</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Posture Trend (Last 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="postureChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card card-custom">
+            <div class="card-header">
+                <h5 class="fw-bold mb-0">Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                    {% for alert in recent_alerts %}
+                    <div class="alert alert-{% if alert.alert_type == 'fall' %}danger{% else %}warning{% endif %} alert-custom">
+                        <small class="text-muted">{{ alert.timestamp|date:"M d, H:i" }}</small><br>
+                        <strong>{{ alert.get_alert_type_display }}</strong>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent alerts</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card card-custom">
+            <div class="card-body text-center">
+                <h5 class="fw-bold mb-3">Quick Actions</h5>
+                <a href="{% url 'real_time_monitoring' %}" class="btn btn-primary btn-custom me-3">
+                    <i class="fas fa-eye me-2"></i>Start Live Monitoring
+                </a>
+                <a href="{% url 'offline_analysis' %}" class="btn btn-info btn-custom me-3">
+                    <i class="fas fa-upload me-2"></i>Upload Offline Data
+                </a>
+                <a href="{% url 'settings' %}" class="btn btn-secondary btn-custom">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Posture trend chart
+const ctx = document.getElementById('postureChart').getContext('2d');
+const postureChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Posture Correctness (%)',
+            data: [],
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Load posture history data
+fetch('/api/posture-history/?days=7')
+    .then(response => response.json())
+    .then(data => {
+        const dailyData = {};
+        data.forEach(item => {
+            const date = new Date(item.timestamp).toDateString();
+            if (!dailyData[date]) {
+                dailyData[date] = { total: 0, correct: 0 };
+            }
+            dailyData[date].total++;
+            if (item.is_correct_posture) {
+                dailyData[date].correct++;
+            }
+        });
+        
+        const labels = Object.keys(dailyData).slice(-7);
+        const percentages = labels.map(date => {
+            const day = dailyData[date];
+            return day.total > 0 ? (day.correct / day.total * 100).toFixed(1) : 0;
+        });
+        
+        postureChart.data.labels = labels.map(date => new Date(date).toLocaleDateString());
+        postureChart.data.datasets[0].data = percentages;
+        postureChart.update();
+    });
+</script>
+{% endblock %}
