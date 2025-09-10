@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posture Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .card-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .alert-custom {
+            border: none;
+            border-radius: 10px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .page-section {
+            display: none;
+        }
+        
+        .page-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#" onclick="showPage('home')">
+                <i class="fas fa-user-check text-primary me-2"></i>
+                Posture Monitor
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" onclick="showPage('dashboard')">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+                <a class="nav-link" href="#" onclick="showPage('real_time_monitoring')">
+                    <i class="fas fa-eye me-1"></i>Live Monitor
+                </a>
+                <a class="nav-link" href="#" onclick="showPage('offline_analysis')">
+                    <i class="fas fa-chart-line me-1"></i>Analysis
+                </a>
+                <a class="nav-link" href="#" onclick="showPage('settings')">
+                    <i class="fas fa-cog me-1"></i>Settings
+                </a>
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Home Page -->
+        <div id="home" class="page-section active">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card card-custom">
+                        <div class="card-body text-center p-5">
+                            <i class="fas fa-user-check fa-5x text-primary mb-4"></i>
+                            <h1 class="display-4 fw-bold mb-4">Posture Monitoring System</h1>
+                            <p class="lead mb-4">
+                                AI-powered real-time posture monitoring and fall detection system
+                                to help you maintain better health and safety.
+                            </p>
+                            
+                            <div class="row mt-5">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-eye fa-3x text-info mb-3"></i>
+                                            <h5>Real-time Monitoring</h5>
+                                            <p>Monitor your posture in real-time with instant feedback</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                            <h5>Fall Detection</h5>
+                                            <p>Automatic fall detection with emergency alerts</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                                            <h5>Analytics</h5>
+                                            <p>Detailed analysis and progress tracking</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-5">
+                                <a href="#" onclick="showPage('register')" class="btn btn-primary btn-custom btn-lg me-3">
+                                    Get Started
+                                </a>
+                                <a href="#" onclick="showPage('login')" class="btn btn-outline-primary btn-custom btn-lg">
+                                    Sign In
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="login" class="page-section">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card card-custom">
+                        <div class="card-body p-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-sign-in-alt fa-4x text-primary mb-3"></i>
+                                <h2 class="fw-bold">Welcome Back</h2>
+                                <p class="text-muted">Sign in to your account</p>
+                            </div>
+                            
+                            <div id="loginError" class="alert alert-danger alert-custom" style="display: none;"></div>
+                            
+                            <form id="loginForm">
+                                <div class="mb-4">
+                                    <label for="username" class="form-label">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="username" name="username" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="password" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-custom btn-lg">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center">
+                                <p class="mb-0">Don't have an account? 
+                                    <a href="#" onclick="showPage('register')" class="text-decoration-none">
+                                        Create one here
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Page -->
+        <div id="register" class="page-section">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card card-custom">
+                        <div class="card-body p-5">
+                            <div class="text-center mb-4">
+                                <i class="fas fa-user-plus fa-4x text-primary mb-3"></i>
+                                <h2 class="fw-bold">Create Account</h2>
+                                <p class="text-muted">Join our posture monitoring system</p>
+                            </div>
+                            
+                            <div id="registerError" class="alert alert-danger alert-custom" style="display: none;"></div>
+                            
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <label for="reg_username" class="form-label">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="reg_username" name="username" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="reg_email" class="form-label">Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        <input type="email" class="form-control" id="reg_email" name="email" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="reg_password" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="reg_password" name="password" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="emergency_contact" class="form-label">Emergency Contact (Optional)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact" placeholder="Phone number or email">
+                                    </div>
+                                    <div class="form-text">
+                                        This contact will be notified in case of fall detection
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-custom btn-lg">
+                                        <i class="fas fa-user-plus me-2"></i>Create Account
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center">
+                                <p class="mb-0">Already have an account? 
+                                    <a href="#" onclick="showPage('login')" class="text-decoration-none">
+                                        Sign in here
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page-section">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 class="fw-bold mb-0">Welcome back, <span id="userName">User</span>!</h2>
+                                    <p class="text-muted mb-0">Here's your posture monitoring overview</p>
+                                </div>
+                                <div>
+                                    <span class="status-indicator status-online"></span>
+                                    Device Connected
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalSamples">0</div>
+                        <div class="text-muted">Samples Today</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="metric-card">
+                        <div class="metric-value text-success" id="correctnessPercentage">0%</div>
+                        <div class="text-muted">Posture Correctness</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="metric-card">
+                        <div class="metric-value text-info" id="recentAlerts">0</div>
+                        <div class="text-muted">Recent Alerts</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="metric-card">
+                        <div class="metric-value text-warning">0</div>
+                        <div class="text-muted">Falls Detected</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Posture Trend (Last 7 Days)</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="postureChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Recent Alerts</h5>
+                        </div>
+                        <div class="card-body" id="alertsContainer">
+                            <p class="text-muted">No recent alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-body text-center">
+                            <h5 class="fw-bold mb-3">Quick Actions</h5>
+                            <a href="#" onclick="showPage('real_time_monitoring')" class="btn btn-primary btn-custom me-3">
+                                <i class="fas fa-eye me-2"></i>Start Live Monitoring
+                            </a>
+                            <a href="#" onclick="showPage('offline_analysis')" class="btn btn-info btn-custom me-3">
+                                <i class="fas fa-upload me-2"></i>Upload Offline Data
+                            </a>
+                            <a href="#" onclick="showPage('settings')" class="btn btn-secondary btn-custom">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Monitoring Page -->
+        <div id="real_time_monitoring" class="page-section">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h2 class="fw-bold mb-0">Real-time Monitoring</h2>
+                                <div>
+                                    <span id="connectionStatus" class="badge bg-secondary">Disconnected</span>
+                                    <button id="connectBtn" class="btn btn-primary btn-custom ms-2">Connect Device</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Current Posture Status</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div id="postureStatus" class="mb-4">
+                                <i id="postureIcon" class="fas fa-user fa-5x text-muted mb-3"></i>
+                                <h4 id="postureText">Waiting for data...</h4>
+                                <p id="postureConfidence" class="text-muted"></p>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div id="tiltX" class="metric-value">0°</div>
+                                        <div class="text-muted">Tilt X</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div id="tiltY" class="metric-value">0°</div>
+                                        <div class="text-muted">Tilt Y</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Fall Detection</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div id="fallStatus" class="mb-4">
+                                <i id="fallIcon" class="fas fa-shield-alt fa-5x text-success mb-3"></i>
+                                <h4 id="fallText">Normal Activity</h4>
+                                <p id="fallConfidence" class="text-muted"></p>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="metric-card">
+                                        <div id="gyroX" class="metric-value">0</div>
+                                        <div class="text-muted">Gyro X</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="metric-card">
+                                        <div id="gyroY" class="metric-value">0</div>
+                                        <div class="text-muted">Gyro Y</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="metric-card">
+                                        <div id="gyroZ" class="metric-value">0</div>
+                                        <div class="text-muted">Gyro Z</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Live Data Stream</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="liveChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">System Alerts</h5>
+                        </div>
+                        <div class="card-body" id="rtAlertsContainer">
+                            <p class="text-muted">No alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Analysis Page -->
+        <div id="offline_analysis" class="page-section">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <h2 class="fw-bold mb-0">Offline Data Analysis</h2>
+                            <p class="text-muted mb-0">Upload your saved posture data for analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Upload Data File</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="uploadForm">
+                                <div class="mb-3">
+                                    <label for="dataFile" class="form-label">Select CSV or Excel file</label>
+                                    <input type="file" class="form-control" id="dataFile" accept=".csv,.xlsx,.xls" required>
+                                    <div class="form-text">
+                                        File should contain columns: <strong>tilt_x</strong>, <strong>tilt_y</strong>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-custom">
+                                    <i class="fas fa-upload me-2"></i>Analyze Data
+                                </button>
+                            </form>
+                            
+                            <div id="uploadProgress" class="mt-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="text-muted">Processing data...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">File Format Requirements</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Required Columns:</h6>
+                            <ul>
+                                <li><strong>tilt_x</strong>: X-axis tilt angle in degrees</li>
+                                <li><strong>tilt_y</strong>: Y-axis tilt angle in degrees</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Supported Formats:</h6>
+                            <ul>
+                                <li>CSV (.csv)</li>
+                                <li>Excel (.xlsx, .xls)</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Example CSV Format:</h6>
+                            <pre class="bg-light p-3 rounded">
+tilt_x,tilt_y
+15.2,8.7
+12.5,10.1
+18.3,5.9
+...
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" id="resultsSection" style="display: none;">
+                <div class="col-md-8 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Analysis Results</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="analysisChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="metric-card mb-3">
+                                <div id="totalSamplesResult" class="metric-value">0</div>
+                                <div class="text-muted">Total Samples</div>
+                            </div>
+                            
+                            <div class="metric-card mb-3">
+                                <div id="correctSamplesResult" class="metric-value text-success">0</div>
+                                <div class="text-muted">Correct Posture</div>
+                            </div>
+                            
+                            <div class="metric-card mb-3">
+                                <div id="correctnessPercentageResult" class="metric-value text-primary">0%</div>
+                                <div class="text-muted">Overall Correctness</div>
+                            </div>
+                            
+                            <button id="downloadReport" class="btn btn-success btn-custom">
+                                <i class="fas fa-download me-2"></i>Download Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings" class="page-section">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <h2 class="fw-bold mb-0">Account Settings</h2>
+                            <p class="text-muted mb-0">Manage your profile and device preferences</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card card-custom mb-4">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Profile Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="profileForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="username" class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="usernameDisplay" value="" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="emailDisplay" value="" readonly>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="emergency_contact_display" 
+                                               name="emergency_contact" value=""
+                                               placeholder="Phone number or email">
+                                    </div>
+                                    <div class="form-text">
+                                        This contact will be notified in case of fall detection
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-custom">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card card-custom mb-4">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Device Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="alertThreshold" class="form-label">Posture Alert Threshold</label>
+                                    <select class="form-select" id="alertThreshold">
+                                        <option value="low">Low (More sensitive)</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High (Less sensitive)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="vibrationIntensity" class="form-label">Vibration Intensity</label>
+                                    <select class="form-select" id="vibrationIntensity">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="monitoringInterval" class="form-label">Monitoring Interval (seconds)</label>
+                                    <input type="range" class="form-range" id="monitoringInterval" 
+                                           min="1" max="10" value="2" step="1">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">1s</small>
+                                        <small class="text-muted">10s</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="fallDetection" checked>
+                                        <label class="form-check-label" for="fallDetection">
+                                            Enable Fall Detection
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="soundAlerts" checked>
+                                        <label class="form-check-label" for="soundAlerts">
+                                            Enable Sound Alerts
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-success btn-custom" id="saveDeviceSettings">
+                                <i class="fas fa-cog me-2"></i>Save Device Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card card-custom mb-4">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Device Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="status-indicator status-online"></span>
+                                <strong>Device Connected</strong>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Last Sync:</small><br>
+                                <span id="lastSync">Never</span>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">Battery Level:</small><br>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">
+                                        85%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-info btn-custom btn-sm" id="testConnection">
+                                <i class="fas fa-wifi me-2"></i>Test Connection
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card card-custom mb-4">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Data Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-primary btn-custom btn-sm w-100 mb-2" id="exportData">
+                                    <i class="fas fa-download me-2"></i>Export Data
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-custom btn-sm w-100 mb-2" id="clearData">
+                                    <i class="fas fa-trash-alt me-2"></i>Clear Old Data
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-custom btn-sm w-100" id="resetDevice">
+                                    <i class="fas fa-redo me-2"></i>Reset Device
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card card-custom">
+                        <div class="card-header">
+                            <h5 class="fw-bold mb-0">Account Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <a href="#" onclick="logout()" class="btn btn-danger btn-custom w-100">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentUser = null;
+        let analysisChart = null;
+        let liveChart = null;
+        let postureChart = null;
+        let socket = null;
+        let chartData = {
+            labels: [],
+            tiltX: [],
+            tiltY: []
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showPage('dashboard');
+                updateUserInfo();
+                initializeDashboard();
+            } else {
+                showPage('home');
+            }
+
+            // Initialize forms
+            initializeForms();
+            
+            // Initialize charts
+            initializeCharts();
+            
+            // Initialize real-time monitoring
+            initializeRealTimeMonitoring();
+            
+            // Initialize offline analysis
+            initializeOfflineAnalysis();
+            
+            // Initialize settings
+            initializeSettings();
+        });
+
+        // Page navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show the requested page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Special initialization for certain pages
+            if (pageId === 'dashboard') {
+                initializeDashboard();
+            } else if (pageId === 'real_time_monitoring') {
+                initializeRealTimeMonitoring();
+            }
+        }
+
+        // User authentication functions
+        function login(username, password) {
+            // In a real app, this would be an API call
+            // For demo purposes, we'll simulate a login
+            if (username && password) {
+                currentUser = {
+                    username: username,
+                    email: `${username}@example.com`,
+                    emergency_contact: "",
+                    is_authenticated: true
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showPage('dashboard');
+                updateUserInfo();
+                initializeDashboard();
+                
+                return true;
+            }
+            return false;
+        }
+
+        function register(username, email, password, emergency_contact) {
+            // In a real app, this would be an API call
+            // For demo purposes, we'll simulate registration
+            if (username && email && password) {
+                currentUser = {
+                    username: username,
+                    email: email,
+                    emergency_contact: emergency_contact || "",
+                    is_authenticated: true
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showPage('dashboard');
+                updateUserInfo();
+                initializeDashboard();
+                
+                return true;
+            }
+            return false;
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            showPage('home');
+        }
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.username;
+                document.getElementById('usernameDisplay').value = currentUser.username;
+                document.getElementById('emailDisplay').value = currentUser.email;
+                document.getElementById('emergency_contact_display').value = currentUser.emergency_contact;
+            }
+        }
+
+        // Form initialization
+        function initializeForms() {
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                if (login(username, password)) {
+                    document.getElementById('loginError').style.display = 'none';
+                } else {
+                    document.getElementById('loginError').textContent = 'Invalid login credentials';
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            });
+            
+            // Register form
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const username = document.getElementById('reg_username').value;
+                const email = document.getElementById('reg_email').value;
+                const password = document.getElementById('reg_password').value;
+                const emergency_contact = document.getElementById('emergency_contact').value;
+                
+                if (register(username, email, password, emergency_contact)) {
+                    document.getElementById('registerError').style.display = 'none';
+                } else {
+                    document.getElementById('registerError').textContent = 'Please fill all required fields';
+                    document.getElementById('registerError').style.display = 'block';
+                }
+            });
+            
+            // Profile form
+            document.getElementById('profileForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (currentUser) {
+                    currentUser.emergency_contact = document.getElementById('emergency_contact_display').value;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    // Show success message
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-custom mt-3';
+                    alert.innerHTML = '<strong>Profile updated successfully!</strong>';
+                    document.getElementById('profileForm').appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                }
+            });
+        }
+
+        // Dashboard functions
+        function initializeDashboard() {
+            if (!currentUser) return;
+            
+            // Generate sample data for dashboard
+            document.getElementById('totalSamples').textContent = Math.floor(Math.random() * 1000) + 500;
+            document.getElementById('correctnessPercentage').textContent = 
+                (Math.random() * 30 + 70).toFixed(1) + '%';
+            document.getElementById('recentAlerts').textContent = Math.floor(Math.random() * 5);
+            
+            // Generate sample alerts
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = '';
+            
+            const alertTypes = ['Poor Posture', 'Fall Detected', 'Device Disconnected'];
+            const numAlerts = Math.floor(Math.random() * 3) + 1;
+            
+            if (numAlerts === 0) {
+                alertsContainer.innerHTML = '<p class="text-muted">No recent alerts</p>';
+            } else {
+                for (let i = 0; i < numAlerts; i++) {
+                    const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+                    const alert = document.createElement('div');
+                    alert.className = `alert alert-${alertType === 'Fall Detected' ? 'danger' : 'warning'} alert-custom`;
+                    
+                    const date = new Date();
+                    date.setHours(date.getHours() - Math.floor(Math.random() * 24));
+                    date.setMinutes(date.getMinutes() - Math.floor(Math.random() * 60));
+                    
+                    alert.innerHTML = `
+                        <small class="text-muted">${date.toLocaleDateString()}, ${date.toLocaleTimeString()}</small><br>
+                        <strong>${alertType}</strong>
+                    `;
+                    
+                    alertsContainer.appendChild(alert);
+                }
+            }
+            
+            // Initialize posture chart
+            if (!postureChart) {
+                const ctx = document.getElementById('postureChart').getContext('2d');
+                postureChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Posture Correctness (%)',
+                            data: [],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Generate sample chart data
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const data = days.map(() => Math.floor(Math.random() * 30 + 70));
+            
+            postureChart.data.labels = days;
+            postureChart.data.datasets[0].data = data;
+            postureChart.update();
+        }
+
+        // Real-time monitoring functions
+        function initializeRealTimeMonitoring() {
+            if (!liveChart) {
+                const ctx = document.getElementById('liveChart').getContext('2d');
+                liveChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [
+                            {
+                                label: 'Tilt X',
+                                data: chartData.tiltX,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Tilt Y',
+                                data: chartData.tiltY,
+                                borderColor: '#764ba2',
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                display: false
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Connect button handler
+            document.getElementById('connectBtn').addEventListener('click', function() {
+                if (socket) {
+                    // Disconnect
+                    clearInterval(dataInterval);
+                    socket = null;
+                    document.getElementById('connectionStatus').textContent = 'Disconnected';
+                    document.getElementById('connectionStatus').className = 'badge bg-secondary';
+                    document.getElementById('connectBtn').textContent = 'Connect Device';
+                    document.getElementById('connectBtn').className = 'btn btn-primary btn-custom ms-2';
+                } else {
+                    // Connect
+                    document.getElementById('connectionStatus').textContent = 'Connected';
+                    document.getElementById('connectionStatus').className = 'badge bg-success';
+                    document.getElementById('connectBtn').textContent = 'Disconnect';
+                    document.getElementById('connectBtn').className = 'btn btn-danger btn-custom ms-2';
+                    
+                    // Simulate WebSocket connection with interval
+                    socket = { connected: true };
+                    simulateDataStream();
+                }
+            });
+        }
+
+        function simulateDataStream() {
+            if (!socket) return;
+            
+            // Clear existing data
+            chartData.labels = [];
+            chartData.tiltX = [];
+            chartData.tiltY = [];
+            
+            // Simulate data updates
+            const dataInterval = setInterval(() => {
+                if (!socket) {
+                    clearInterval(dataInterval);
+                    return;
+                }
+                
+                const now = new Date().toLocaleTimeString();
+                const tiltX = (Math.random() * 40 - 20).toFixed(1);
+                const tiltY = (Math.random() * 40 - 20).toFixed(1);
+                const gyroX = (Math.random() * 10 - 5).toFixed(2);
+                const gyroY = (Math.random() * 10 - 5).toFixed(2);
+                const gyroZ = (Math.random() * 10 - 5).toFixed(2);
+                
+                // Update display
+                document.getElementById('tiltX').textContent = `${tiltX}°`;
+                document.getElementById('tiltY').textContent = `${tiltY}°`;
+                document.getElementById('gyroX').textContent = gyroX;
+                document.getElementById('gyroY').textContent = gyroY;
+                document.getElementById('gyroZ').textContent = gyroZ;
+                
+                // Determine posture status
+                const isGoodPosture = Math.abs(tiltX) < 15 && Math.abs(tiltY) < 15;
+                const postureIcon = document.getElementById('postureIcon');
+                const postureText = document.getElementById('postureText');
+                
+                if (isGoodPosture) {
+                    postureIcon.className = 'fas fa-user-check fa-5x text-success mb-3';
+                    postureText.textContent = 'Good Posture';
+                    postureText.className = 'text-success';
+                } else {
+                    postureIcon.className = 'fas fa-user-times fa-5x text-danger mb-3';
+                    postureText.textContent = 'Poor Posture';
+                    postureText.className = 'text-danger';
+                    
+                    // Occasionally add an alert
+                    if (Math.random() > 0.8) {
+                        addAlert('Poor posture detected!', 'warning', 'rtAlertsContainer');
+                    }
+                }
+                
+                // Update confidence
+                document.getElementById('postureConfidence').textContent = 
+                    `Confidence: ${(Math.random() * 30 + 70).toFixed(1)}%`;
+                
+                // Update chart
+                chartData.labels.push(now);
+                chartData.tiltX.push(tiltX);
+                chartData.tiltY.push(tiltY);
+                
+                // Keep only last 20 data points
+                if (chartData.labels.length > 20) {
+                    chartData.labels.shift();
+                    chartData.tiltX.shift();
+                    chartData.tiltY.shift();
+                }
+                
+                liveChart.update('none');
+                
+                // Occasionally simulate a fall
+                if (Math.random() > 0.95) {
+                    simulateFall();
+                }
+            }, 1000);
+        }
+
+        function simulateFall() {
+            const fallIcon = document.getElementById('fallIcon');
+            const fallText = document.getElementById('fallText');
+            
+            fallIcon.className = 'fas fa-exclamation-triangle fa-5x text-danger mb-3';
+            fallText.textContent = 'FALL DETECTED!';
+            fallText.className = 'text-danger';
+            
+            addAlert('Fall detected! Emergency contact notified.', 'danger', 'rtAlertsContainer');
+            
+            // Auto-reset after 5 seconds
+            setTimeout(() => {
+                fallIcon.className = 'fas fa-shield-alt fa-5x text-success mb-3';
+                fallText.textContent = 'Normal Activity';
+                fallText.className = 'text-success';
+            }, 5000);
+        }
+
+        function addAlert(message, type, containerId) {
+            const alertsContainer = document.getElementById(containerId);
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-custom`;
+            alert.innerHTML = `
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small><br>
+                <strong>${message}</strong>
+            `;
+            
+            // Remove the "No alerts" message if it exists
+            const noAlertsMsg = alertsContainer.querySelector('p.text-muted');
+            if (noAlertsMsg) {
+                noAlertsMsg.remove();
+            }
+            
+            alertsContainer.insertBefore(alert, alertsContainer.firstChild);
+            
+            // Auto-remove alert after 10 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                    
+                    // If no alerts left, show "No alerts" message
+                    if (alertsContainer.children.length === 0) {
+                        alertsContainer.innerHTML = '<p class="text-muted">No alerts</p>';
+                    }
+                }
+            }, 10000);
+        }
+
+        // Offline analysis functions
+        function initializeOfflineAnalysis() {
+            if (!analysisChart) {
+                const ctx = document.getElementById('analysisChart').getContext('2d');
+                analysisChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'Tilt X',
+                                data: [],
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Tilt Y', 
+                                data: [],
+                                borderColor: '#764ba2',
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Posture Status',
+                                data: [],
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                tension: 0.4,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 1,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value ? 'Good' : 'Poor';
+                                    }
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Handle file upload
+            document.getElementById('uploadForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('dataFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    alert('Please select a file to upload');
+                    return;
+                }
+                
+                // Show progress
+                document.getElementById('uploadProgress').style.display = 'block';
+                const progressBar = document.querySelector('.progress-bar');
+                progressBar.style.width = '0%';
+                
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    if (progress >= 90) {
+                        clearInterval(progressInterval);
+                    }
+                }, 200);
+                
+                // Simulate file processing
+                setTimeout(() => {
+                    clearInterval(progressInterval);
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        document.getElementById('uploadProgress').style.display = 'none';
+                        
+                        // Generate sample analysis results
+                        const analysisResults = generateSampleAnalysis();
+                        displayAnalysisResults(analysisResults);
+                        document.getElementById('resultsSection').style.display = 'block';
+                    }, 500);
+                }, 2000);
+            });
+            
+            // Download report
+            document.getElementById('downloadReport').addEventListener('click', function() {
+                const report = {
+                    title: 'Posture Analysis Report',
+                    generated: new Date().toISOString(),
+                    summary: {
+                        totalSamples: document.getElementById('totalSamplesResult').textContent,
+                        correctSamples: document.getElementById('correctSamplesResult').textContent,
+                        correctnessPercentage: document.getElementById('correctnessPercentageResult').textContent,
+                        averageTiltX: '12.5°',
+                        averageTiltY: '8.2°'
+                    },
+                    recommendations: [
+                        'Try to maintain a straighter back during work hours',
+                        'Take regular breaks to stretch and readjust your posture',
+                        'Consider adjusting your chair and monitor height'
+                    ]
+                };
+                
+                const blob = new Blob([JSON.stringify(report, null, 2)], { 
+                    type: 'application/json' 
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'posture_analysis_report.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function generateSampleAnalysis() {
+            const time_series = [];
+            const total_samples = Math.floor(Math.random() * 200) + 100;
+            let correct_samples = 0;
+            
+            for (let i = 0; i < total_samples; i++) {
+                const tilt_x = (Math.random() * 40 - 20).toFixed(1);
+                const tilt_y = (Math.random() * 40 - 20).toFixed(1);
+                const posture_correct = Math.abs(tilt_x) < 15 && Math.abs(tilt_y) < 15;
+                
+                if (posture_correct) correct_samples++;
+                
+                time_series.push({
+                    tilt_x: parseFloat(tilt_x),
+                    tilt_y: parseFloat(tilt_y),
+                    posture_correct: posture_correct
+                });
+            }
+            
+            return {
+                time_series: time_series,
+                total_samples: total_samples,
+                correct_samples: correct_samples,
+                correctness_percentage: ((correct_samples / total_samples) * 100).toFixed(1),
+                avg_tilt_x: (time_series.reduce((sum, item) => sum + Math.abs(item.tilt_x), 0) / total_samples).toFixed(1),
+                avg_tilt_y: (time_series.reduce((sum, item) => sum + Math.abs(item.tilt_y), 0) / total_samples).toFixed(1)
+            };
+        }
+
+        function displayAnalysisResults(analysis) {
+            // Update summary metrics
+            document.getElementById('totalSamplesResult').textContent = analysis.total_samples || 0;
+            document.getElementById('correctSamplesResult').textContent = analysis.correct_samples || 0;
+            document.getElementById('correctnessPercentageResult').textContent = 
+                (analysis.correctness_percentage || 0) + '%';
+            
+            // Update chart with analysis data
+            if (analysis.time_series) {
+                const labels = analysis.time_series.map((_, index) => `Sample ${index + 1}`);
+                const tiltX = analysis.time_series.map(item => item.tilt_x);
+                const tiltY = analysis.time_series.map(item => item.tilt_y);
+                const postureStatus = analysis.time_series.map(item => item.posture_correct ? 1 : 0);
+                
+                // Only show every 10th point for performance
+                const sampleStep = Math.ceil(analysis.time_series.length / 100);
+                const sampledLabels = labels.filter((_, i) => i % sampleStep === 0);
+                const sampledTiltX = tiltX.filter((_, i) => i % sampleStep === 0);
+                const sampledTiltY = tiltY.filter((_, i) => i % sampleStep === 0);
+                const sampledPostureStatus = postureStatus.filter((_, i) => i % sampleStep === 0);
+                
+                analysisChart.data.labels = sampledLabels;
+                analysisChart.data.datasets[0].data = sampledTiltX;
+                analysisChart.data.datasets[1].data = sampledTiltY;
+                analysisChart.data.datasets[2].data = sampledPostureStatus;
+                analysisChart.update();
+            }
+        }
+
+        // Settings functions
+        function initializeSettings() {
+            // Load saved settings
+            const settings = ['alertThreshold', 'vibrationIntensity', 'monitoringInterval', 'fallDetection', 'soundAlerts'];
+            
+            settings.forEach(setting => {
+                const value = localStorage.getItem(setting);
+                if (value) {
+                    const element = document.getElementById(setting);
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value === 'true';
+                        } else {
+                            element.value = value;
+                        }
+                    }
+                }
+            });
+            
+            // Update range slider display
+            document.getElementById('monitoringInterval').addEventListener('input', function() {
+                const value = this.value;
+                const display = this.parentNode.querySelector('.d-flex small:last-child');
+                if (display) {
+                    display.textContent = value + 's';
+                }
+            });
+            
+            // Save device settings
+            document.getElementById('saveDeviceSettings').addEventListener('click', function() {
+                const settings = {
+                    alertThreshold: document.getElementById('alertThreshold').value,
+                    vibrationIntensity: document.getElementById('vibrationIntensity').value,
+                    monitoringInterval: document.getElementById('monitoringInterval').value,
+                    fallDetection: document.getElementById('fallDetection').checked,
+                    soundAlerts: document.getElementById('soundAlerts').checked
+                };
+                
+                // Save to localStorage
+                Object.keys(settings).forEach(key => {
+                    localStorage.setItem(key, settings[key]);
+                });
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-custom mt-3';
+                alert.innerHTML = '<strong>Settings saved successfully!</strong>';
+                document.getElementById('saveDeviceSettings').parentNode.appendChild(alert);
+                
+                setTimeout(() => alert.remove(), 3000);
+            });
+            
+            // Test connection
+            document.getElementById('testConnection').addEventListener('click', function() {
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
+                
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-wifi me-2"></i>Test Connection';
+                    
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-info alert-custom mt-3';
+                    alert.innerHTML = '<strong>Connection test completed</strong>';
+                    btn.parentNode.appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                }, 2000);
+            });
+            
+            // Export data
+            document.getElementById('exportData').addEventListener('click', function() {
+                // Simulate data export
+                const data = {
+                    user: currentUser ? currentUser.username : "Guest",
+                    exportDate: new Date().toISOString(),
+                    message: "Data export feature demonstration"
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'posture_data_export.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+            
+            // Clear data
+            document.getElementById('clearData').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear old data? This action cannot be undone.')) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-warning alert-custom mt-3';
+                    alert.innerHTML = '<strong>Old data cleared successfully</strong>';
+                    this.parentNode.appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                }
+            });
+            
+            // Reset device
+            document.getElementById('resetDevice').addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset the device? This will clear all device settings.')) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-info alert-custom mt-3';
+                    alert.innerHTML = '<strong>Device reset command sent</strong>';
+                    this.parentNode.appendChild(alert);
+                    
+                    setTimeout(() => alert.remove(), 3000);
+                }
+            });
+            
+            // Update last sync time
+            document.getElementById('lastSync').textContent = new Date().toLocaleString();
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Charts are initialized in their respective sections
+        }
+    </script>
+</body>
+</html>
