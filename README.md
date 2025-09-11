@@ -3,6 +3,7 @@ AI-powered, real-time spinal posture monitoring and fall detection emergency ale
 
 
 Features
+
 ⦁	Real-time Posture Monitoring: Live tracking of body tilt angles with instant feedback
 
 ⦁	Fall Detection: Advanced algorithms to detect sudden falls and send alerts
@@ -22,9 +23,8 @@ Database: SQLite
 Backend:  Django
 
 
-Prerequisites
+Prerequisites:
 Modern web browser (Chrome)
-
 Internet connection 
 
 
@@ -69,7 +69,6 @@ Real-time Monitoring:
 ⦁	View real-time posture data and alerts
 
 Offline Analysis:
-
 ⦁	Go to the "Analysis" section
 
 ⦁	Upload a CSV file with tilt data (tilt_x, tilt_y columns)
