@@ -1,7 +1,6 @@
 AI-powered, real-time spinal posture monitoring and fall detection emergency alert system is an innovative AI-powered web application designed to monitor posture in real-time and detect potential falls, promoting better health and safety for users who spend long hours at desks or are at risk of falls.
 
 
-
 Features
 
 ⦁	Real-time Posture Monitoring: Live tracking of body tilt angles with instant feedback
@@ -86,3 +85,5 @@ Future Enhancements
 ⦁	Integration with popular health platforms
 
 ⦁	Advanced analytics with predictive capabilities
+
+(index.html file is just a file that combines all the templates into a single-page application suitable for GitHub Pages (since GitHub Pages serves static content). We are only creating a static version that simulates the functionality with mock data and JavaScript.)
